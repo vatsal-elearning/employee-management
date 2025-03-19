@@ -63,6 +63,57 @@ export const fetchEmployees = createAsyncThunk(
   },
 );
 
+export const addEmployee = createAsyncThunk(
+  'employees/add',
+  async (employee: Omit<Employee, 'id'>, { rejectWithValue }) => {
+    try {
+      const response = await fetch('/api/employees', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(employee),
+      });
+      await handleApiError(response);
+      const data = await response.json();
+      return data.employee;
+    } catch (error: any) {
+      return rejectWithValue(error?.message || 'Failed to add employee');
+    }
+  },
+);
+
+export const updateEmployee = createAsyncThunk(
+  'employees/update',
+  async (employee: Employee, { rejectWithValue }) => {
+    try {
+      const response = await fetch(`/api/employees/${employee.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(employee),
+      });
+      await handleApiError(response);
+      const data = await response.json();
+      return data.employee;
+    } catch (error: any) {
+      return rejectWithValue(error?.message || 'Failed to update employee');
+    }
+  },
+);
+
+export const deleteEmployee = createAsyncThunk(
+  'employees/delete',
+  async (id: string, { rejectWithValue }) => {
+    try {
+      const response = await fetch(`/api/employees/${id}`, {
+        method: 'DELETE',
+      });
+      await handleApiError(response);
+      return id;
+    } catch (error: any) {
+      return rejectWithValue(error?.message || 'Failed to delete employee');
+    }
+  },
+);
+
 const employeeSlice = createSlice({
   name: 'employees',
   initialState,
@@ -71,6 +122,26 @@ const employeeSlice = createSlice({
     // Fetch employees
     handleAsyncActions<Employee[]>(builder, fetchEmployees, (state, action) => {
       state.employees = action.payload;
+    });
+
+    // Add employee
+    handleAsyncActions<Employee>(builder, addEmployee, (state, action) => {
+      state.employees.push(action.payload);
+    });
+
+    // Update employee
+    handleAsyncActions<Employee>(builder, updateEmployee, (state, action) => {
+      const index = state.employees.findIndex(
+        (emp) => emp.id === action.payload.id,
+      );
+      if (index !== -1) state.employees[index] = action.payload;
+    });
+
+    // Delete employee
+    handleAsyncActions<string>(builder, deleteEmployee, (state, action) => {
+      state.employees = state.employees.filter(
+        (emp) => emp.id !== action.payload,
+      );
     });
   },
 });

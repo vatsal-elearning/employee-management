@@ -1,4 +1,4 @@
-import { createServer, Model, Registry } from 'miragejs';
+import { createServer, Model, Response, Registry } from 'miragejs';
 import { ModelDefinition, AnyModels } from 'miragejs/-types';
 import Schema from 'miragejs/orm/schema';
 import { Employee } from '../types/Employee';
@@ -87,6 +87,34 @@ export function makeServer() {
 
       this.get('/employees', (schema: AppSchema) => {
         return schema.all('employee');
+      });
+
+      this.post('/employees', (schema: AppSchema, request) => {
+        const attrs = JSON.parse(request.requestBody) as Employee;
+        return schema.create('employee', attrs);
+      });
+
+      this.put('/employees/:id', (schema: AppSchema, request) => {
+        const id = request.params.id;
+        const newAttrs = JSON.parse(request.requestBody) as Partial<Employee>;
+        const employee = schema.find('employee', id);
+
+        if (employee) {
+          employee.update(newAttrs);
+          return employee;
+        }
+        return new Response(404, {}, { error: 'Employee not found' });
+      });
+
+      this.delete('/employees/:id', (schema: AppSchema, request) => {
+        const id = request.params.id;
+        const employee = schema.find('employee', id);
+
+        if (employee) {
+          employee.destroy();
+          return new Response(200, {}, { message: 'Employee deleted' });
+        }
+        return new Response(404, {}, { error: 'Employee not found' });
       });
     },
   });
